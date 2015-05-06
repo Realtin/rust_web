@@ -1,9 +1,7 @@
 [package]
 name = "web_rust"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["realtin <juliakbln@gmail.com>"]
 
 [dependencies]
-iron = "*"
-rusqlite = "0.0.17"
-time = "0.1.24"
+nickel = "*"

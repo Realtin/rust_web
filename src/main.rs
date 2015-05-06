@@ -1,40 +1,44 @@
-extern crate iron;
-extern crate rusqlite;
+#[macro_use]
+extern crate nickel;
 
-use iron::prelude::*;
-use iron::status;
-use rusqlite::SqliteConnection;
+use nickel::{Nickel, Request, Response, HttpRouter, MiddlewareResult, MediaType};
+use std::collections::HashMap;
 
-struct Person {
-    name: String
+// this function add header to response for example now we add application/json
+fn content_type<'a>(_: &mut Request, mut res: Response<'a>) -> MiddlewareResult<'a> {
+        //MediaType can be any valid type for reference see
+        res.content_type(MediaType::Json);
+        res.send( "{'foo':'bar'}")
+}
+
+fn tmpl_handler<'a> (_: &mut Request, res: Response<'a>) -> MiddlewareResult<'a> {
+    let mut data = HashMap::<&str, &str>::new();
+    // add data for render
+    // name = {{ name }} in template
+    // page_title = {{ page_title }}
+    data.insert("name", "Jule");// change "Alex" to your name )
+    data.insert("page_title", "lesson 2");
+    res.render("app/views/index.tpl", &data)
 }
 
 fn main() {
+    let mut server = Nickel::new();
 
-    fn hello_world(_: &mut Request) -> IronResult<Response> {
-        let me = Person {
-            name: "Juuuule".to_string()
-        };
-        let conn = SqliteConnection::open_in_memory().unwrap();
-        conn.execute("CREATE TABLE hello (
-            name   TEXT NOT NULL
-            )", &[]).unwrap();
-        conn.execute("INSERT INTO hello (name)
-                      VALUES ($1)",
-                      &[&me.name]).unwrap();
-        let mut result_person = Person {
-            name: "".to_string()
-        };
-        let mut stmt = conn.prepare("SELECT name FROM hello").unwrap();
-        for row in stmt.query(&[]).unwrap().map(|row| row.unwrap()) {
-            result_person = Person{
-                name: row.get(0)
-            };
-            //result = String::from_utf8(blub).unwrap();
-        };
-        Ok(Response::with((status::Ok, result_person.name)))
-    }
+    //middleware function logs each request to console
+    server.utilize(middleware! { |request|
+        println!("logging request: {:?}", request.origin.uri);
+    });
 
-    Iron::new(hello_world).http("localhost:3000").unwrap();
-    println!("On 3000");
+    // start using router
+    let mut router = Nickel::router();
+
+    //works only on route http://localhost:8080
+    router.get("/", tmpl_handler);
+
+    // go to http://localhost:8080/content-type to see this route in action
+    router.get("/content-type", content_type);
+
+    server.utilize(router);
+    // you can change 8080 to any port
+    server.listen("127.0.0.1:8080");
 }
