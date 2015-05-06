@@ -1,5 +1,5 @@
 # Rust WebDev Playground
 
-feat. 
-  * Iron
-  * Rusqlite
+feat.
+  * Nickel
+  * Postgres
